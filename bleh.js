@@ -4,6 +4,7 @@ let heldkey = null;
 let username = null;
 let nameInput = "";
 let leaderboardPos = null
+let leaderboardData = [];
 let state, pstate;
 let clicked = false;
 let releasedkey = null;
@@ -37,7 +38,6 @@ function setup() {
     bg<1 ? lerpColor(color(255), color('#00E4C2'), bg) : lerpColor(color('#00E4C2'), color(0), bg-1),
   ];
   state = "menu";
-  pstate = state;
   windowResized();
 }
 
@@ -59,6 +59,7 @@ function draw() {
     case "loading": loading(); break;
     case "countdown": countdown(); break;
     case "postgame": postgame(); break;
+    case "leaderboard": leaderboard(); break;
   }
   if(tooltipdata) {
     button(tooltipdata.label, tooltipdata.x, tooltipdata.y, tooltipdata.w, tooltipdata.h);
@@ -172,7 +173,7 @@ function pause() {
     (x,y) => { if(button("[q]uit", x, y, u*14, u*4.5, 'q')) { started = false; tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; } },
   ];
   for(let i=0; i<options.length; i++) {
-    const x = cx;
+    const x = bx;
     const y = cy-((options.length-1)*u*5*0.5)+(i*u*5);
     options[i](x, y);
   }
@@ -214,6 +215,7 @@ function postgame() {
 
   const options = [
     (x,y) => { if(button("[r]eplay", x, y, u*14, u*4.5, 'r')) { started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "countdown"; } },
+    (x,y) => { if(button("[t]op list",x,y,u*14, u*4.5,'t') && selected !== null) { pstate="postgame"; state="leaderboard"; } },
     (x,y) => { if(button("[q]uit", x, y, u*14, u*4.5, 'q')) { started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "menu"; } },
   ];
   for(let i=0; i<options.length; i++) {
@@ -228,13 +230,14 @@ function menu() {
   fill(255); noStroke();
   textSize(height*0.1);
   textAlign(LEFT, CENTER);
-  text("bleh4k", bx-u*7, height*0.35);
+  text("bleh4k", bx-u*7, height/3);
   textSize(height*0.02);
   textAlign(CENTER, CENTER);
 
   if(tracks.length == 0) {
-    button("no charts imported! ):", width-bx-u*21, cy, u*56, u*9,'a');
-  } else {
+    button("no charts imported! ):", width-bx-u*21, cy, u*56, u*9);
+  } 
+  else {
     for(let i=0; i<tracks.length; i++) {
       const x = width-bx-u*21;
       const y = cy-((tracks.length-1)*u*4.75)+(i*u*9.5)+trackscroll;
@@ -244,6 +247,7 @@ function menu() {
   
   const options = [
     (x,y) => { if(button("pl[a]y", x, y, u*14, u*4.5, 'a') && selected !== null) { state = "countdown"; } },
+    (x,y) => { if(button("[t]op list",x,y,u*14, u*4.5,'t') && selected !== null) { pstate="menu"; state="leaderboard"; } },
     (x,y) => { if(button("impo[r]t", x, y, u*14, u*4.5, 'r')) setTimeout(loadinit, 0); },
     (x,y) => { if(button("[s]ettings", x, y, u*14, u*4.5, 's')) { pstate="menu"; state="settings"; } },
   ];
@@ -254,6 +258,36 @@ function menu() {
   }
 }
 
+function leaderboard() {
+  background(0);
+  fill(255); noStroke();
+  textSize(height*0.1);
+  textAlign(LEFT, CENTER);
+  text("toplist", bx-u*7, height/3);
+  textSize(height*0.02);
+  textAlign(CENTER, CENTER);
+
+  if(leaderboardData.length == 0) {
+    button("no scores logged! ):", width-bx-u*21, cy, u*56, u*9);
+  } 
+  else {
+    for(let i=0; i<leaderboardData.length; i++) {
+      const x = width-bx-u*21;
+      const y = cy-((leaderboardData.length-1)*u*4.75)+(i*u*9.5)+trackscroll;
+      button("#"+(i+1)+" "+leaderboardData[i].username+"  "+nf(leaderboardData[i].score*100,1,1)+"%", x, y, u*56, u*4.5);
+    }
+  }
+  
+  if(button("pl[a]y", bx, cy-u*2.5, u*14, u*4.5, 'a')) { state = "countdown"; };
+  if(button("[b]ack", bx, cy+u*2.5, u*14, u*4.5, 'b')) { state = pstate; };
+}
+
+async function fetchLeaderboard() {
+  const trackident = tracks[selected].chart.meta.title + tracks[selected].chart.meta.artist;
+  const res = await fetch('/leaderboard/' + trackident);
+  leaderboardData = await res.json();
+}
+
 function settings() {
   colors = [
     bg<1 ? lerpColor(color(255), color('#FF8289'), bg) : lerpColor(color('#FF8289'), color(0), bg-1),
@@ -261,7 +295,15 @@ function settings() {
     bg<1 ? lerpColor(color(255), color('#72DB5A'), bg) : lerpColor(color('#72DB5A'), color(0), bg-1),
     bg<1 ? lerpColor(color(255), color('#00E4C2'), bg) : lerpColor(color('#00E4C2'), color(0), bg-1),
   ];
-  if(pstate === "menu") background(0);
+  if(pstate === "menu") {
+    background(0);
+    fill(255); noStroke();
+    textSize(height*0.1);
+    textAlign(LEFT, CENTER);
+    text("settings", bx-u*7, height/3);
+    textSize(height*0.02);
+    textAlign(CENTER, CENTER);
+  }
   else play();
 
   const options = [
@@ -271,7 +313,7 @@ function settings() {
     (x,y) => { if(button("[b]ack", x, y, u*14, u*4.5, 'b')) state = pstate; },
   ];
   for(let i=0; i<options.length; i++) {
-    const x = cx;
+    const x = bx;
     const y = cy-((options.length-1)*u*5*0.5)+(i*u*5);
     options[i](x, y);
   }
@@ -290,6 +332,7 @@ function keyPressed() {
       case "countdown": counter = null; state = "paused"; break;
       case "paused": state = "countdown"; break;
       case "settings": state = pstate; break;
+      case "menu": pstate = "menu"; state = "settings"; break;
       case "postgame" && username!==null: started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "menu";
     };
   }
@@ -327,14 +370,19 @@ function keyReleased() {
     if(keyCode === DOWN_ARROW && selected < tracks.length-1) { selected++; scrolltoselected(); }
     if(keyCode === ENTER && selected !== null) { state = "countdown"; }
   }
+
+  if(state === "leaderboard") {
+    if(keyCode === UP_ARROW) trackscroll += u*9.5;
+    if(keyCode === DOWN_ARROW) trackscroll -= u*9.5;
+  }
 }
 
 function mouseReleased() { clicked = true; }
 
 function mouseWheel(event) {
-  if(state === "menu") {
+  if(state === "menu" || state === "leaderboard") {
     trackscroll -= event.delta*0.75;
-    const edge = (tracks.length-1)*u*4.75;
+    const edge = (state === "leaderboard" ? leaderboardData.length : tracks.length - 1)*u*4.75;
     trackscroll = constrain(trackscroll, -edge, edge);
   }
 }
