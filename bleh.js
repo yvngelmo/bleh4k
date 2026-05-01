@@ -5,6 +5,7 @@ let username = null;
 let nameInput = "";
 let leaderboardPos = null
 let leaderboardData = [];
+let ispb;
 let state, pstate;
 let clicked = false;
 let releasedkey = null;
@@ -135,6 +136,28 @@ async function submitScore() {
   username = nameInput;
 }
 
+async function fetchLeaderboard() {
+  const trackident = tracks[selected].chart.meta.title + tracks[selected].chart.meta.artist;
+  const res = await fetch('/leaderboard/' + trackident);
+  leaderboardData = await res.json();
+}
+
+function getpb(track) {
+  const pb = localStorage.getItem(track.chart.meta.title+track.chart.meta.artist);
+  return pb ? JSON.parse(pb) : null;
+}
+
+function calpb() {
+  const id = tracks[selected].chart.meta.title+tracks[selected].chart.meta.artist;
+  const old = getpb(tracks[selected]);
+  const {acc, rating, finished} = stats(tracks[selected]);
+  if((!old || acc > old.acc) && finished) {
+    localStorage.setItem(id, JSON.stringify({acc, rating, date: Date.now()}));
+    return true;
+  }
+  return false;
+}
+
 function loading() {
   button("...", cx, height*0.85, u*14, u*4.5);
 }
@@ -144,7 +167,7 @@ function play() {
   else playtime = tracks[selected].track.isPlaying() || tracks[selected].track.isPaused() ? tracks[selected].track.currentTime()*1000 : 0;
 
   const { acc, rating, finished } = stats(tracks[selected]);
-  if(finished) { tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; }
+  if(finished) { ispb = calpb(); tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; }
 
   image(tracks[selected].img, 0, 0, width, height);
   background(bg>=1 ? 255 : 0, bg>=1 ? (bg-1)*255 : (1-bg)*255);
@@ -166,11 +189,19 @@ function play() {
 
 function pause() {
   play();
+
+  fill(255); noStroke();
+  textSize(height*0.1);
+  textAlign(LEFT, CENTER);
+  text("stats", bx-u*7, height/3);
+  textSize(height*0.02);
+  textAlign(CENTER, CENTER);
+
   const options = [
     (x,y) => { if(button("r[e]sume", x, y, u*14, u*4.5, 'e')) { state = "countdown"; } },
     (x,y) => { if(button("[r]estart", x, y, u*14, u*4.5, 'r')) { started = false; combo = 0; maxcombo = 0; tracks[selected].track.stop(); tracks[selected].chart = parse(tracks[selected].charttxt); state = "countdown"; } },
     (x,y) => { if(button("[s]ettings", x, y, u*14, u*4.5, 's')) { pstate = "paused"; state = "settings"; } },
-    (x,y) => { if(button("[q]uit", x, y, u*14, u*4.5, 'q')) { started = false; tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; } },
+    (x,y) => { if(button("[q]uit", x, y, u*14, u*4.5, 'q')) { started = false; ispb = calpb(); tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; } },
   ];
   for(let i=0; i<options.length; i++) {
     const x = bx;
@@ -195,6 +226,13 @@ function countdown() {
 
 function postgame() {
   background(0);
+  fill(255); noStroke();
+  textSize(height*0.1);
+  textAlign(LEFT, CENTER);
+  text("stats", bx-u*7, height/3);
+  textSize(height*0.02);
+  textAlign(CENTER, CENTER);
+
   const { acc, rating, finished } = stats(tracks[selected]);
   if(finished && username === null) {
     button(nameInput.length>0?nameInput:"[enter name]",cx,cy,u*20,u*4.5);
@@ -203,10 +241,10 @@ function postgame() {
   const hits = tracks[selected].chart.notes.filter(n => n.hit !== null && n.hit !== "miss");
   const bias = hits.length ? hits.reduce((sum, n) => sum + n.hit, 0) / hits.length : 0;
   const statsx = width-bx-u*21;
-  button(!finished ? "cancelled!" : "finished!", statsx-u*21, cy-u*21.5, u*14, u*4.5,!finished ? "no score submitted" : "score submitted");
+  button(!finished ? "cancelled!" : ispb ? "new pb!" : "finished!", statsx-u*21, cy-u*21.5, u*14, u*4.5,!finished ? "no score submitted" : "score submitted");
   button(nf(acc*100,1,1)+"%", statsx+u*16, cy-u*21.5, u*14, u*4.5, "accuracy");
   button(rating, statsx+u*25.75, cy-u*21.5, u*4.5, u*4.5, "rating");
-  trackbutton(tracks[selected], statsx, cy-u*14.25, u*56, u*9, selected,"title\nartist","track length");
+  trackbutton(tracks[selected], statsx, cy-u*14.25, u*56, u*9, selected,"title\nartist","personal best\ntrack length");
   button("", statsx, cy+u*4.75, u*56, u*28, "accuracy graph");
   accuracygraph(statsx, cy+u*4.75, u*56, u*28);
   button(maxcombo+"x", statsx-u*23.375, cy+u*21.5, u*9.25, u*4.5, "max combo");
@@ -282,12 +320,6 @@ function leaderboard() {
   if(button("[b]ack", bx, cy+u*2.5, u*14, u*4.5, 'b')) { state = pstate; };
 }
 
-async function fetchLeaderboard() {
-  const trackident = tracks[selected].chart.meta.title + tracks[selected].chart.meta.artist;
-  const res = await fetch('/leaderboard/' + trackident);
-  leaderboardData = await res.json();
-}
-
 function settings() {
   colors = [
     bg<1 ? lerpColor(color(255), color('#FF8289'), bg) : lerpColor(color('#FF8289'), color(0), bg-1),
@@ -295,16 +327,15 @@ function settings() {
     bg<1 ? lerpColor(color(255), color('#72DB5A'), bg) : lerpColor(color('#72DB5A'), color(0), bg-1),
     bg<1 ? lerpColor(color(255), color('#00E4C2'), bg) : lerpColor(color('#00E4C2'), color(0), bg-1),
   ];
-  if(pstate === "menu") {
-    background(0);
-    fill(255); noStroke();
-    textSize(height*0.1);
-    textAlign(LEFT, CENTER);
-    text("settings", bx-u*7, height/3);
-    textSize(height*0.02);
-    textAlign(CENTER, CENTER);
-  }
+  if(pstate === "menu") background(0);
   else play();
+
+  fill(255); noStroke();
+  textSize(height*0.1);
+  textAlign(LEFT, CENTER);
+  text("stats", bx-u*7, height/3);
+  textSize(height*0.02);
+  textAlign(CENTER, CENTER);
 
   const options = [
     (x,y) => { scrollspeed = slider("[s]peed", x, y, u*14, u*4.5, scrollspeed, 0.0002, 0.002, v => nf(v*1000,1,1), 0.0001, 's'); },
@@ -483,6 +514,7 @@ function button(label, x, y, w, h, string) {
 }
 
 function trackbutton(track, x, y, w, h, i, string1, string2) {
+  const pb = getpb(track);
   const hoveredleft = mouseX<x&&abs(mouseX-x)<w*0.5 && abs(mouseY-y)<h*0.5;
   const hoveredright = mouseX>x&&abs(mouseX-x)<w*0.5 && abs(mouseY-y)<h*0.5;
   const secs = floor(track.track.duration()%60);
@@ -497,7 +529,7 @@ function trackbutton(track, x, y, w, h, i, string1, string2) {
   textAlign(LEFT, CENTER);
   text(track.chart.meta.title+"\n"+track.chart.meta.artist, x-w*0.46, y);
   textAlign(RIGHT, CENTER);
-  text(mins+"min "+secs+"sec", x+w*0.46, y);
+  text((pb ? pb.rating+"  "+nf(pb.acc*100,1,1)+"%  "+new Date(pb.date).toLocaleDateString() : "-")+"\n"+mins+"min "+secs+"sec", x+w*0.46, y);
   textAlign(CENTER, CENTER);
   if(string2 && hoveredleft) {
     const tw = textWidth(string1) + u*4.5;
