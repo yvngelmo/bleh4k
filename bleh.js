@@ -143,7 +143,7 @@ function play() {
   else playtime = tracks[selected].track.isPlaying() || tracks[selected].track.isPaused() ? tracks[selected].track.currentTime()*1000 : 0;
 
   const { acc, rating, finished } = stats(tracks[selected]);
-  if(finished) { tracks[selected].track.stop(); username = null; nameInput = ""; state = "postgame"; }
+  if(finished) { tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; }
 
   image(tracks[selected].img, 0, 0, width, height);
   background(bg>=1 ? 255 : 0, bg>=1 ? (bg-1)*255 : (1-bg)*255);
@@ -169,7 +169,7 @@ function pause() {
     (x,y) => { if(button("r[e]sume", x, y, u*14, u*4.5, 'e')) { state = "countdown"; } },
     (x,y) => { if(button("[r]estart", x, y, u*14, u*4.5, 'r')) { started = false; combo = 0; maxcombo = 0; tracks[selected].track.stop(); tracks[selected].chart = parse(tracks[selected].charttxt); state = "countdown"; } },
     (x,y) => { if(button("[s]ettings", x, y, u*14, u*4.5, 's')) { pstate = "paused"; state = "settings"; } },
-    (x,y) => { if(button("[q]uit", x, y, u*14, u*4.5, 'q')) { started = false; tracks[selected].track.stop(); username = null; nameInput = ""; state = "postgame"; } },
+    (x,y) => { if(button("[q]uit", x, y, u*14, u*4.5, 'q')) { started = false; tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; } },
   ];
   for(let i=0; i<options.length; i++) {
     const x = cx;
@@ -210,7 +210,7 @@ function postgame() {
   accuracygraph(statsx, cy+u*4.75, u*56, u*28);
   button(maxcombo+"x", statsx-u*23.375, cy+u*21.5, u*9.25, u*4.5, "max combo");
   button(nf(bias,1,1)+"ms", statsx-u*13.625, cy+u*21.5, u*9.25, u*4.5, "input bias");
-  button("#103", statsx+u*21, cy+u*21.5, u*14, u*4.5, "leaderboard pos");
+  button(leaderboardPos ? "#"+leaderboardPos : "-", statsx+u*21, cy+u*21.5, u*14, u*4.5, "leaderboard pos");
 
   const options = [
     (x,y) => { if(button("[r]eplay", x, y, u*14, u*4.5, 'r')) { started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "countdown"; } },
