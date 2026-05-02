@@ -39,6 +39,7 @@ function setup() {
     bg<1 ? lerpColor(color(255), color('#00E4C2'), bg) : lerpColor(color('#00E4C2'), color(0), bg-1),
   ];
   state = "menu";
+  pstate = "menu";
   windowResized();
 }
 
@@ -193,7 +194,7 @@ function pause() {
   fill(255); noStroke();
   textSize(height*0.1);
   textAlign(LEFT, CENTER);
-  text("stats", bx-u*7, height/3);
+  text("pause", bx-u*7, height/3);
   textSize(height*0.02);
   textAlign(CENTER, CENTER);
 
@@ -253,7 +254,7 @@ function postgame() {
 
   const options = [
     (x,y) => { if(button("[r]eplay", x, y, u*14, u*4.5, 'r')) { started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "countdown"; } },
-    (x,y) => { if(button("[t]op list",x,y,u*14, u*4.5,'t') && selected !== null) { pstate="postgame"; state="leaderboard"; } },
+    (x,y) => { if(button("[t]op list",x,y,u*14, u*4.5,'t') && selected !== null) { pstate="postgame"; fetchLeaderboard(); trackscroll = 0; state="leaderboard"; } },
     (x,y) => { if(button("[q]uit", x, y, u*14, u*4.5, 'q')) { started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "menu"; } },
   ];
   for(let i=0; i<options.length; i++) {
@@ -285,7 +286,7 @@ function menu() {
   
   const options = [
     (x,y) => { if(button("pl[a]y", x, y, u*14, u*4.5, 'a') && selected !== null) { state = "countdown"; } },
-    (x,y) => { if(button("[t]op list",x,y,u*14, u*4.5,'t') && selected !== null) { pstate="menu"; state="leaderboard"; } },
+    (x,y) => { if(button("[t]op list",x,y,u*14, u*4.5,'t') && selected !== null) { pstate="menu"; fetchLeaderboard(); trackscroll = 0; state="leaderboard"; } },
     (x,y) => { if(button("impo[r]t", x, y, u*14, u*4.5, 'r')) setTimeout(loadinit, 0); },
     (x,y) => { if(button("[s]ettings", x, y, u*14, u*4.5, 's')) { pstate="menu"; state="settings"; } },
   ];
@@ -316,8 +317,8 @@ function leaderboard() {
     }
   }
   
-  if(button("pl[a]y", bx, cy-u*2.5, u*14, u*4.5, 'a')) { state = "countdown"; };
-  if(button("[b]ack", bx, cy+u*2.5, u*14, u*4.5, 'b')) { state = pstate; };
+  if(button("pl[a]y", bx, cy-u*2.5, u*14, u*4.5, 'a')) { started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "countdown"; }
+  if(button("[b]ack", bx, cy+u*2.5, u*14, u*4.5, 'b')) { trackscroll = 0; state = pstate; };
 }
 
 function settings() {
@@ -333,7 +334,7 @@ function settings() {
   fill(255); noStroke();
   textSize(height*0.1);
   textAlign(LEFT, CENTER);
-  text("stats", bx-u*7, height/3);
+  text("settings", bx-u*7, height/3);
   textSize(height*0.02);
   textAlign(CENTER, CENTER);
 
@@ -360,11 +361,12 @@ function keyPressed() {
   if(key === 'Escape') {
     switch(state) {
       case "playing": tracks[selected].track.pause(); state = "paused"; break;
+      case "leaderboard": trackscroll = 0; state = pstate; break;
       case "countdown": counter = null; state = "paused"; break;
       case "paused": state = "countdown"; break;
       case "settings": state = pstate; break;
       case "menu": pstate = "menu"; state = "settings"; break;
-      case "postgame" && username!==null: started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "menu";
+      case "postgame": if(!stats(tracks[selected]).finished || username !== null) { started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); trackscroll = 0; state = "menu"; } break;
     };
   }
   if(state === "playing") {
