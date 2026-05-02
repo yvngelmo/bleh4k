@@ -313,7 +313,7 @@ function leaderboard() {
     for(let i=0; i<leaderboardData.length; i++) {
       const x = width-bx-u*21;
       const y = cy-((leaderboardData.length-1)*u*4.75)+(i*u*9.5)+trackscroll;
-      button("#"+(i+1)+" "+leaderboardData[i].username+"  "+nf(leaderboardData[i].score*100,1,1)+"%", x, y, u*56, u*4.5);
+      button("#"+(i+1)+" "+leaderboardData[i].username+"  "+nf(leaderboardData[i].score*100,1,1)+"%", x, y, u*56, u*9);
     }
   }
   
