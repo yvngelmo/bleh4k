@@ -97,6 +97,7 @@ function initlib() {
       }
     }, 0);
   }
+  pstate = "menu";
 }
 
 function loadinit() {
@@ -154,16 +155,13 @@ function parse(text) {
 async function submitScore() {
   const { acc } = stats(tracks[selected]);
   const trackident = tracks[selected].chart.meta.title + tracks[selected].chart.meta.artist;
-  
-  await db.ref('scores').push({
-    trackident,
-    username: nameInput,
-    score: acc,
-    date: Date.now()
-  });
-  
+  const date = Date.now();
+
+  await db.ref('scores').push({ trackident, username: nameInput, score: acc, date });
+
+  savescore(date);
   await fetchLeaderboard();
-  leaderboardPos = leaderboardData.findIndex(s => s.username === nameInput && s.score === acc) + 1;
+  leaderboardPos = leaderboardData.findIndex(s => s.date === date) + 1;
   username = nameInput;
 }
 
@@ -180,19 +178,32 @@ async function fetchLeaderboard() {
 }
 
 function getpb(track) {
-  const pb = localStorage.getItem(track.chart.meta.title+track.chart.meta.artist);
-  return pb ? JSON.parse(pb) : null;
+  const id = track.chart.meta.title + track.chart.meta.artist;
+  const scores = JSON.parse(localStorage.getItem(id) || "[]");
+  if(!scores.length) return null;
+  return scores.reduce((best, s) => s.acc > best.acc ? s : best);
 }
 
 function calpb() {
-  const id = tracks[selected].chart.meta.title+tracks[selected].chart.meta.artist;
-  const old = getpb(tracks[selected]);
-  const {acc, rating, finished} = stats(tracks[selected]);
-  if((!old || acc > old.acc) && finished) {
-    localStorage.setItem(id, JSON.stringify({acc, rating, date: Date.now()}));
-    return true;
-  }
-  return false;
+  const pb = getpb(tracks[selected]);
+  const { acc, finished } = stats(tracks[selected]);
+  return finished && (!pb || acc > pb.acc);
+}
+
+function getLocalScores(track) {
+  const id = track.chart.meta.title + track.chart.meta.artist;
+  return JSON.parse(localStorage.getItem(id) || "[]");
+}
+
+function savescore(date) {
+  const id = tracks[selected].chart.meta.title + tracks[selected].chart.meta.artist;
+  const { acc, rating, finished } = stats(tracks[selected]);
+  if(!finished) return false;
+  
+  const existing = JSON.parse(localStorage.getItem(id) || "[]");
+  existing.push({ acc, rating, date, username: nameInput });
+  localStorage.setItem(id, JSON.stringify(existing));
+  return true;
 }
 
 function loading() {
@@ -321,21 +332,26 @@ function menu() {
 
 function leaderboard() {
   background(0);
-  title("toplist",false);
+  title("toplist", false);
 
+  const localScores = getLocalScores(tracks[selected]);
+  const localDates = new Set(localScores.map(s => s.date));
+
+  const pb = getpb(tracks[selected]);
   if(leaderboardData.length == 0) {
     button("no scores logged! ):", width-bx-u*21, cy, u*56, u*9);
-  } 
-  else {
-    for(let i=0; i<leaderboardData.length; i++) {
+  } else {
+    for(let i = 0; i < leaderboardData.length; i++) {
       const x = width-bx-u*21;
       const y = cy-((leaderboardData.length-1)*u*4.75)+(i*u*9.5)+trackscroll;
-      button("#"+(i+1)+" "+leaderboardData[i].username+"  "+nf(leaderboardData[i].score*100,1,1)+"%", x, y, u*56, u*9);
+      const entry = leaderboardData[i];
+      const isOwn = localDates.has(entry.date);
+      leaderboardbutton("#"+(i+1)+" "+entry.username+"  "+nf(entry.score*100,1,1)+"%", x, y, u*56, u*9, isOwn);
     }
   }
-  
+
   if(button("pl[a]y", bx, cy-u*2.5, u*14, u*4.5, 'a')) { started = false; combo = 0; maxcombo = 0; tracks[selected].chart = parse(tracks[selected].charttxt); state = "countdown"; }
-  if(button("[b]ack", bx, cy+u*2.5, u*14, u*4.5, 'b')) { trackscroll = 0; state = pstate; };
+  if(button("[b]ack", bx, cy+u*2.5, u*14, u*4.5, 'b')) { trackscroll = 0; state = pstate; }
 }
 
 function settings() {
@@ -529,6 +545,15 @@ function button(label, x, y, w, h, string) {
     tooltipdata = {label: string, x: constrain(mouseX+to, to, width-to), y: mouseY+th*0.5+u*0.375, w: tw, h: th};
   }
   return (clicked && hovered || releasedkey === string) && string && string.length===1;
+}
+
+function leaderboardbutton(label, x, y, w, h, own) {
+  fill(0); noStroke();
+  rect(x, y, w+u*0.75, h+u*0.75);
+  stroke(own ? 255 : 100); strokeWeight(u*0.1);
+  fill(own ? 255 : 0); rect(x, y, w, h);
+  fill(own ? 0 : 255); noStroke();
+  text(label, x, y);
 }
 
 function trackbutton(track, x, y, w, h, i, string1, string2) {
