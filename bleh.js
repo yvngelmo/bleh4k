@@ -569,8 +569,8 @@ function trackbutton(track, x, y, w, h, i, string1, string2) {
   const pb = getpb(track);
   const hoveredleft = mouseX<x&&abs(mouseX-x)<w*0.5 && abs(mouseY-y)<h*0.5;
   const hoveredright = mouseX>x&&abs(mouseX-x)<w*0.5 && abs(mouseY-y)<h*0.5;
-  const secs = floor(track.track.duration()%60);
-  const mins = floor(track.track.duration()/60);
+  const secs = track.track ? floor(track.track.duration()%60) : 0;
+  const mins = track.track ? floor(track.track.duration()/60) : 0;
   fill(0); noStroke();
   rect(x, y, w+u*0.75, h+u*0.75);
   stroke(255); strokeWeight(u*0.1);
