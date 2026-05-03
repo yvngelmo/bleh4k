@@ -32,7 +32,7 @@ function setup() {
   textFont('Inter');
   rectMode(CENTER);
   strokeCap(SQUARE);
-  frameRate(144);
+  frameRate(240);
   colors = [
     bg<1 ? lerpColor(color(255), color('#FF8289'), bg) : lerpColor(color('#FF8289'), color(0), bg-1),
     bg<1 ? lerpColor(color(255), color('#FF9A00'), bg) : lerpColor(color('#FF9A00'), color(0), bg-1),
