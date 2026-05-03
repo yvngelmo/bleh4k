@@ -218,7 +218,11 @@ function play() {
   const { acc, rating, finished } = stats(tracks[selected]);
   if(finished) { ispb = calpb(); tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; }
 
-  image(tracks[selected].img, 0, 0, width, height);
+  const ratio = width / tracks[selected].img.width;
+  const imgh = tracks[selected].img.height * ratio;
+  for(let y = 0; y < height; y += imgh) {
+    image(tracks[selected].img, 0, y, width, imgh);
+  }
   background(bg>=1 ? 255 : 0, bg>=1 ? (bg-1)*255 : (1-bg)*255);
   ui(acc, rating);
 
