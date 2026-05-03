@@ -128,13 +128,18 @@ async function loadprocess(file) {
 
 async function loadfile(zip) {
   const charttxt = await zip.file('blehchart').async('string');
-  const imgbin = await zip.file('blehimg').async('blob');
-  const trackbin = await zip.file('blehtrack').async('blob');
-  const imgurl = URL.createObjectURL(imgbin);
-  const trackurl = URL.createObjectURL(trackbin);
+  const imgbin = zip.file('blehimg') ? await zip.file('blehimg').async('blob') : null;
+  const trackbin = zip.file('blehtrack') ? await zip.file('blehtrack').async('blob') : null;
+  const imgurl = imgbin ? URL.createObjectURL(imgbin) : null;
+  const trackurl = trackbin ? URL.createObjectURL(trackbin) : null;
   const chart = parse(charttxt);
-  const img = await new Promise((resolve, reject) => loadImage(imgurl, resolve, reject));
-  const track = await new Promise((resolve, reject) => loadSound(trackurl, resolve, reject));
+  const img = imgurl ? await new Promise((resolve, reject) => loadImage(imgurl, resolve, reject)) : null;
+  const blankAudio = new Blob([new Uint8Array([255,251,144,0,0,0,0,0])], {type: 'audio/mp3'});
+  const blankUrl = URL.createObjectURL(blankAudio);
+  const track = trackurl
+    ? await new Promise((resolve, reject) => loadSound(trackurl, resolve, reject))
+    : await new Promise(resolve => loadSound(blankUrl, resolve));
+
   tracks.push({chart, charttxt, img, track});
   if(selected === null) selected = 0;
 }
@@ -218,12 +223,15 @@ function play() {
   const { acc, rating, finished } = stats(tracks[selected]);
   if(finished) { ispb = calpb(); tracks[selected].track.stop(); leaderboardPos = null; username = null; nameInput = ""; state = "postgame"; }
 
-  const ratio = width / tracks[selected].img.width;
-  const imgh = tracks[selected].img.height * ratio;
-  for(let y = 0; y < height; y += imgh) {
-    image(tracks[selected].img, 0, y, width, imgh);
+  if(tracks[selected].img) {
+    const ratio = width / tracks[selected].img.width;
+    const imgh = tracks[selected].img.height * ratio;
+    for(let y = 0; y < height; y += imgh) {
+      image(tracks[selected].img, 0, y, width, imgh);
+    }
+    background(bg>=1 ? 255 : 0, bg>=1 ? (bg-1)*255 : (1-bg)*255);
   }
-  background(bg>=1 ? 255 : 0, bg>=1 ? (bg-1)*255 : (1-bg)*255);
+  else background(bg>=1 ? 255 : 0);
   ui(acc, rating);
 
   for(const note of tracks[selected].chart.notes) {
