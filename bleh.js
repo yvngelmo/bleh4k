@@ -227,12 +227,7 @@ function play() {
 function pause() {
   play();
 
-  fill(255); noStroke();
-  textSize(height*0.1);
-  textAlign(LEFT, CENTER);
-  text("pause", bx-u*7, height/3);
-  textSize(height*0.02);
-  textAlign(CENTER, CENTER);
+  title("pause",true);
 
   const options = [
     (x,y) => { if(button("r[e]sume", x, y, u*14, u*4.5, 'e')) { state = "countdown"; } },
@@ -262,13 +257,7 @@ function countdown() {
 }
 
 function postgame() {
-  background(0);
-  fill(255); noStroke();
-  textSize(height*0.1);
-  textAlign(LEFT, CENTER);
-  text("stats", bx-u*7, height/3);
-  textSize(height*0.02);
-  textAlign(CENTER, CENTER);
+  title("stats",false);
 
   const { acc, rating, finished } = stats(tracks[selected]);
   if(finished && username === null) {
@@ -302,12 +291,7 @@ function postgame() {
 
 function menu() {
   background(0);
-  fill(255); noStroke();
-  textSize(height*0.1);
-  textAlign(LEFT, CENTER);
-  text("bleh4k", bx-u*7, height/3);
-  textSize(height*0.02);
-  textAlign(CENTER, CENTER);
+  title("bleh4k");
 
   if(tracks.length == 0) {
     button("no charts imported! ):", width-bx-u*21, cy, u*56, u*9);
@@ -335,12 +319,7 @@ function menu() {
 
 function leaderboard() {
   background(0);
-  fill(255); noStroke();
-  textSize(height*0.1);
-  textAlign(LEFT, CENTER);
-  text("toplist", bx-u*7, height/3);
-  textSize(height*0.02);
-  textAlign(CENTER, CENTER);
+  title("toplist",false);
 
   if(leaderboardData.length == 0) {
     button("no scores logged! ):", width-bx-u*21, cy, u*56, u*9);
@@ -364,15 +343,14 @@ function settings() {
     bg<1 ? lerpColor(color(255), color('#72DB5A'), bg) : lerpColor(color('#72DB5A'), color(0), bg-1),
     bg<1 ? lerpColor(color(255), color('#00E4C2'), bg) : lerpColor(color('#00E4C2'), color(0), bg-1),
   ];
-  if(pstate === "menu") background(0);
-  else play();
-
-  fill(255); noStroke();
-  textSize(height*0.1);
-  textAlign(LEFT, CENTER);
-  text("settings", bx-u*7, height/3);
-  textSize(height*0.02);
-  textAlign(CENTER, CENTER);
+  if(pstate === "menu") {
+    background(0);
+    title("settings",false);
+  }
+  else {
+    play();
+    title("settings",true);
+  }
 
   const options = [
     (x,y) => { scrollspeed = slider("[s]peed", x, y, u*14, u*4.5, scrollspeed, 0.0002, 0.002, v => nf(v*1000,1,1), 0.0001, 's'); },
@@ -602,4 +580,13 @@ function slider(label, x, y, w, h, val, min, max, format, step, string) {
     return lerp(min, max, constrain((mouseX-(x-w*0.5))/w, 0, 1));
   }
   return val;
+}
+
+function title(title,bgvisible) {
+  if(bgvisible) fill(bg>1?0:255); else fill(255);
+  noStroke(); textSize(height*0.1);
+  textAlign(LEFT, CENTER);
+  text(title, bx-u*7, height/3);
+  textSize(height*0.02);
+  textAlign(CENTER, CENTER);
 }
