@@ -93,9 +93,8 @@ function initlib() {
         state = "menu";
         ptate = "menu";
       } catch(err) {
-        state = "menu";
-        ptate = "menu";
-        alert('Failed to load: ' + err.message);
+  state = "menu";
+  alert('Failed to load: ' + (err?.message || err?.toString() || JSON.stringify(err)));
       }
     }, 0);
   }
@@ -135,10 +134,8 @@ async function loadfile(zip) {
   const trackurl = trackbin ? URL.createObjectURL(trackbin) : null;
   const chart = parse(charttxt);
   const img = imgurl ? await new Promise((resolve, reject) => loadImage(imgurl, resolve, reject)) : null;
-  const blankAudio = new Blob([new Uint8Array([255,251,144,0,0,0,0,0])], {type: 'audio/mp3'});
-  const track = trackurl
-    ? await new Promise((resolve, reject) => loadSound(trackurl, resolve, reject))
-    : await new Promise(resolve => loadSound(URL.createObjectURL(blankAudio), resolve));
+  const blank = () => URL.createObjectURL(new Blob([new Uint8Array([255,251,144,0,0,0,0,0])], {type: 'audio/mp3'}));
+  const track = await new Promise(resolve => loadSound(trackurl || blank(), resolve, () => loadSound(blank(), resolve)));
   tracks.push({chart, charttxt, img, track});
   if(selected === null) selected = 0;
 }
