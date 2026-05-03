@@ -89,6 +89,7 @@ function initlib() {
         }
         const arrayBuf = await r.arrayBuffer();
         const zip = await JSZip.loadAsync(arrayBuf);
+        console.log('zip loaded', zip);
         await loadfile(zip);
         state = "menu";
       } 
@@ -112,6 +113,7 @@ function loadinit() {
 }
 
 async function loadprocess(file) {
+  console.log('loadprocess', file.name);
   if(!file) { state = "menu"; return; }
   const bin = await file.arrayBuffer();
   const zip = await JSZip.loadAsync(bin);
