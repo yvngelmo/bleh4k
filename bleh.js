@@ -32,6 +32,7 @@ function setup() {
   textFont('Inter');
   rectMode(CENTER);
   strokeCap(SQUARE);
+  frameRate(144);
   colors = [
     bg<1 ? lerpColor(color(255), color('#FF8289'), bg) : lerpColor(color('#FF8289'), color(0), bg-1),
     bg<1 ? lerpColor(color(255), color('#FF9A00'), bg) : lerpColor(color('#FF9A00'), color(0), bg-1),
@@ -177,12 +178,11 @@ async function fetchLeaderboard() {
   leaderboardData = scores.sort((a, b) => b.score - a.score);
 }
 
-function getpb(track) {
-  const id = track.chart.meta.title + track.chart.meta.artist;
-  const scores = JSON.parse(localStorage.getItem(id) || "[]");
-  if(!scores.length) return null;
-  return scores.reduce((best, s) => s.acc > best.acc ? s : best);
-}
+  function getpb(track) {
+    const scores = getLocalScores(track);
+    if(!scores.length) return null;
+    return scores.reduce((best, s) => s.acc > best.acc ? s : best);
+  }
 
 function calpb() {
   const pb = getpb(tracks[selected]);
@@ -341,7 +341,6 @@ function leaderboard() {
   const localScores = getLocalScores(tracks[selected]);
   const localDates = new Set(localScores.map(s => s.date));
 
-  const pb = getpb(tracks[selected]);
   if(leaderboardData.length == 0) {
     button("no scores logged! ):", width-bx-u*21, cy, u*56, u*9);
   } else {
