@@ -80,10 +80,10 @@ function initlib() {
     
     setTimeout(async () => {
       try {
-        const r = await fetch('/proxy?lib=' + encodeURIComponent(url));
+        const r = await fetch(url);
         
         if(!r.ok) {
-          throw new Error(`Server error: ${r.status}`);
+          throw new Error(`Failed to fetch: ${r.status}`);
         }
         const arrayBuf = await r.arrayBuffer();
         const zip = await JSZip.loadAsync(arrayBuf);
