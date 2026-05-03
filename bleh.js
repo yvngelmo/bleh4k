@@ -134,8 +134,10 @@ async function loadfile(zip) {
   const trackurl = trackbin ? URL.createObjectURL(trackbin) : null;
   const chart = parse(charttxt);
   const img = imgurl ? await new Promise((resolve, reject) => loadImage(imgurl, resolve, reject)) : null;
-  const blank = () => URL.createObjectURL(new Blob([new Uint8Array([255,251,144,0,0,0,0,0])], {type: 'audio/mp3'}));
-  const track = await new Promise(resolve => loadSound(trackurl || blank(), resolve, () => loadSound(blank(), resolve)));
+  const track = await new Promise(resolve => {
+    if(!trackurl) return resolve(null);
+    loadSound(trackurl, resolve, () => resolve(null));
+  });
   tracks.push({chart, charttxt, img, track});
   if(selected === null) selected = 0;
 }
