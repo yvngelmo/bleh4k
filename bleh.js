@@ -40,6 +40,7 @@ function setup() {
     bg<1 ? lerpColor(color(255), color('#00E4C2'), bg) : lerpColor(color('#00E4C2'), color(0), bg-1),
   ];
   state = "menu";
+  pstate = "init";
   windowResized();
   initlib();
 }
