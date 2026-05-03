@@ -28,4 +28,31 @@ server.get('/leaderboard/:trackident', (req, res) => {
   res.json(scores);
 });
 
+server.get('/proxy', async (req, res) => {
+  const url = req.query.lib;
+  
+  if(!url) {
+    return res.status(400).json({ error: 'no url' });
+  }
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    if(!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const buf = await response.arrayBuffer();
+    res.set('Content-Type', 'application/octet-stream');
+    res.end(Buffer.from(buf));
+    
+  } catch(e) { 
+    res.status(500).json({ error: e.message }); 
+  }
+});
+
 server.listen(3000, () => console.log('running on localhost:3000'));
