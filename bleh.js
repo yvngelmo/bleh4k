@@ -26,6 +26,8 @@ let scrollspeed = 0.0007;
 let volume = 0.7;
 let bg = 1;
 
+p5.disableFriendlyErrors = true;
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
   textAlign(CENTER, CENTER);
@@ -79,28 +81,27 @@ function initlib() {
   
   if(url) {
     state = "loading";
-    
     setTimeout(async () => {
       try {
         const r = await fetch(url);
-        
-        if(!r.ok) {
-          throw new Error(`Failed to fetch: ${r.status}`);
-        }
-        const arrayBuf = await r.arrayBuffer();
-        const zip = await JSZip.loadAsync(arrayBuf);
-        console.log('zip loaded', zip);
-        await loadfile(zip);
+        if(!r.ok) throw new Error(`Failed to fetch: ${r.status}`);
+        const zip = await JSZip.loadAsync(await r.arrayBuffer());
+        const files = Object.values(zip.files).filter(f => !f.dir && f.name.endsWith('.bleh'));
+        await Promise.all(files.map(async f => {
+          await loadfile(await JSZip.loadAsync(await f.async('arraybuffer')));
+        }));
         state = "menu";
-      } 
-      catch(err) {
+        ptate = "menu";
+      } catch(err) {
         state = "menu";
+        ptate = "menu";
         alert('Failed to load: ' + err.message);
       }
     }, 0);
   }
-  pstate = "init";
+  else pstate = "menu";
 }
+
 
 function loadinit() {
   state = "loading";
@@ -113,12 +114,10 @@ function loadinit() {
 }
 
 async function loadprocess(file) {
-  console.log('loadprocess', file.name);
   if(!file) { state = "menu"; return; }
-  const bin = await file.arrayBuffer();
-  const zip = await JSZip.loadAsync(bin);
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
   if(file.name.endsWith('.blehs')) {
-    const files = Object.values(zip.files).filter(f => !f.dir);
+    const files = Object.values(zip.files).filter(f => !f.dir && f.name.endsWith('.bleh'));
     await Promise.all(files.map(async f => {
       await loadfile(await JSZip.loadAsync(await f.async('arraybuffer')));
     }));
@@ -129,7 +128,6 @@ async function loadprocess(file) {
 }
 
 async function loadfile(zip) {
-  console.log(Object.keys(zip.files));
   const charttxt = await zip.file('blehchart').async('string');
   const imgbin = zip.file('blehimg') ? await zip.file('blehimg').async('blob') : null;
   const trackbin = zip.file('blehtrack') ? await zip.file('blehtrack').async('blob') : null;
@@ -138,11 +136,9 @@ async function loadfile(zip) {
   const chart = parse(charttxt);
   const img = imgurl ? await new Promise((resolve, reject) => loadImage(imgurl, resolve, reject)) : null;
   const blankAudio = new Blob([new Uint8Array([255,251,144,0,0,0,0,0])], {type: 'audio/mp3'});
-  const blankUrl = URL.createObjectURL(blankAudio);
   const track = trackurl
     ? await new Promise((resolve, reject) => loadSound(trackurl, resolve, reject))
-    : await new Promise(resolve => loadSound(blankUrl, resolve));
-
+    : await new Promise(resolve => loadSound(URL.createObjectURL(blankAudio), resolve));
   tracks.push({chart, charttxt, img, track});
   if(selected === null) selected = 0;
 }
