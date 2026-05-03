@@ -153,21 +153,29 @@ function parse(text) {
 async function submitScore() {
   const { acc } = stats(tracks[selected]);
   const trackident = tracks[selected].chart.meta.title + tracks[selected].chart.meta.artist;
-  await fetch('/score', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ trackident, username: nameInput, score: acc, date: Date.now() })
+  
+  await db.ref('scores').push({
+    trackident,
+    username: nameInput,
+    score: acc,
+    date: Date.now()
   });
-  const res = await fetch('/leaderboard/' + trackident);
-  const scores = await res.json();
-  leaderboardPos = scores.findIndex(s => s.username === nameInput && s.score === acc) + 1;
+  
+  await fetchLeaderboard();
+  leaderboardPos = leaderboardData.findIndex(s => s.username === nameInput && s.score === acc) + 1;
   username = nameInput;
 }
 
 async function fetchLeaderboard() {
   const trackident = tracks[selected].chart.meta.title + tracks[selected].chart.meta.artist;
-  const res = await fetch('/leaderboard/' + trackident);
-  leaderboardData = await res.json();
+  const snapshot = await db.ref('scores').orderByChild('trackident').equalTo(trackident).once('value');
+  
+  const scores = [];
+  snapshot.forEach(childSnapshot => {
+    scores.push(childSnapshot.val());
+  });
+  
+  leaderboardData = scores.sort((a, b) => b.score - a.score);
 }
 
 function getpb(track) {
