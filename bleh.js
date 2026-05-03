@@ -127,6 +127,7 @@ async function loadprocess(file) {
 }
 
 async function loadfile(zip) {
+  console.log(Object.keys(zip.files));
   const charttxt = await zip.file('blehchart').async('string');
   const imgbin = zip.file('blehimg') ? await zip.file('blehimg').async('blob') : null;
   const trackbin = zip.file('blehtrack') ? await zip.file('blehtrack').async('blob') : null;
