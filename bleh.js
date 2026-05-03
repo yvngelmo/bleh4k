@@ -583,7 +583,7 @@ function slider(label, x, y, w, h, val, min, max, format, step, string) {
 }
 
 function title(title,bgvisible) {
-  if(bgvisible) fill(bg>=1?0:255); else fill(255);
+  if(bgvisible) fill(bg>1?0:255); else fill(255);
   noStroke(); textSize(height*0.1);
   textAlign(LEFT, CENTER);
   text(title, bx-u*7, height/3);
