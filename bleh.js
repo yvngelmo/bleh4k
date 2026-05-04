@@ -25,7 +25,6 @@ let colors;
 let scrollspeed = 0.0007;
 let volume = 0.7;
 let bg = 1;
-
 p5.disableFriendlyErrors = true;
 
 function setup() {
@@ -86,19 +85,19 @@ function initlib() {
         const r = await fetch(url);
         if(!r.ok) throw new Error(`Failed to fetch: ${r.status}`);
         const zip = await JSZip.loadAsync(await r.arrayBuffer());
-        const files = Object.values(zip.files).filter(f => !f.dir && f.name.endsWith('.bleh'));
-        await Promise.all(files.map(async f => {
-          await loadfile(await JSZip.loadAsync(await f.async('arraybuffer')));
-        }));
+        await loadfile(zip);
+        pstate = "init";
+      } 
+      catch(err) {
         state = "menu";
-        ptate = "menu";
-      } catch(err) {
-  state = "menu";
-  alert('Failed to load: ' + (err?.message || err?.toString() || JSON.stringify(err)));
+        pstate = "menu";
       }
     }, 0);
+  } else {
+    state = "menu";
+    pstate = "menu";
   }
-  else pstate = "menu";
+
 }
 
 
@@ -114,9 +113,10 @@ function loadinit() {
 
 async function loadprocess(file) {
   if(!file) { state = "menu"; return; }
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const bin = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(bin);
   if(file.name.endsWith('.blehs')) {
-    const files = Object.values(zip.files).filter(f => !f.dir && f.name.endsWith('.bleh'));
+    const files = Object.values(zip.files).filter(f => !f.dir);
     await Promise.all(files.map(async f => {
       await loadfile(await JSZip.loadAsync(await f.async('arraybuffer')));
     }));
@@ -134,10 +134,7 @@ async function loadfile(zip) {
   const trackurl = trackbin ? URL.createObjectURL(trackbin) : null;
   const chart = parse(charttxt);
   const img = imgurl ? await new Promise((resolve, reject) => loadImage(imgurl, resolve, reject)) : null;
-  const track = await new Promise(resolve => {
-    if(!trackurl) return resolve(null);
-    loadSound(trackurl, resolve, () => resolve(null));
-  });
+  const track = await new Promise((resolve, reject) => loadSound(trackurl, resolve, reject));
   tracks.push({chart, charttxt, img, track});
   if(selected === null) selected = 0;
 }
@@ -477,8 +474,8 @@ function drawnote(missed, column, y) {
 
 function ui(acc, rating) {
   const remaining = tracks[selected].track.duration()-tracks[selected].track.currentTime();
-  const mins = floor(remaining/60);
-  const secs = floor(remaining%60);
+  const secs = floor(tracks[selected].track.duration()%60);
+  const mins = floor(tracks[selected].track.duration()/60);
   noStroke();
   for(let i=0; i<4; i++) {
     fill(colors[i]);
@@ -569,8 +566,8 @@ function trackbutton(track, x, y, w, h, i, string1, string2) {
   const pb = getpb(track);
   const hoveredleft = mouseX<x&&abs(mouseX-x)<w*0.5 && abs(mouseY-y)<h*0.5;
   const hoveredright = mouseX>x&&abs(mouseX-x)<w*0.5 && abs(mouseY-y)<h*0.5;
-  const secs = track.track ? floor(track.track.duration()%60) : 0;
-  const mins = track.track ? floor(track.track.duration()/60) : 0;
+  const secs = floor(track.track.duration()%60);
+  const mins = floor(track.track.duration()/60);
   fill(0); noStroke();
   rect(x, y, w+u*0.75, h+u*0.75);
   stroke(255); strokeWeight(u*0.1);
